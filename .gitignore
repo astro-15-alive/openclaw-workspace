@@ -1,0 +1,47 @@
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Log files
+*.log
+logs/
+
+# Backup files
+*.bak
+*.backup
+backup/
+.openclaw.bak*/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OpenClaw specific
+.clawhub/
+.openclaw/
+reports/
