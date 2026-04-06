@@ -1,0 +1,141 @@
+#!/bin/bash
+# model-router: Automatically route tasks to the appropriate model
+
+set -e
+
+# Parse arguments
+TASK=""
+FORCE_FAST=false
+FORCE_SMART=false
+VERBOSE=false
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --fast)
+      FORCE_FAST=true
+      shift
+      ;;
+    --smart)
+      FORCE_SMART=true
+      shift
+      ;;
+    --verbose|-v)
+      VERBOSE=true
+      shift
+      ;;
+    -h|--help)
+      echo "Usage: model-router [OPTIONS] 'task description'"
+      echo ""
+      echo "Options:"
+      echo "  --fast      Force route to gemma-fast (simple tasks)"
+      echo "  --smart     Force route to primary model (complex tasks)"
+      echo "  --verbose   Show routing decision"
+      echo "  -h, --help  Show this help"
+      echo ""
+      echo "Examples:"
+      echo '  model-router "List all Python files"'
+      echo '  model-router --fast "Format this JSON"'
+      echo '  model-router --smart "Analyze this complex document"'
+      exit 0
+      ;;
+    *)
+      TASK="$1"
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$TASK" ]]; then
+  echo "Error: No task specified"
+  echo "Usage: model-router 'task description'"
+  exit 1
+fi
+
+# Keywords that indicate task complexity
+FAST_KEYWORDS=("list" "show" "find" "count" "format" "convert" "extract" "simple" "quick" "brief")
+SMART_KEYWORDS=("analyze" "explain" "reason" "complex" "detail" "document" "comprehensive" "strategy" "plan")
+CONTEXT_INDICATORS=("document" "file" "analyze" "read" "process" "large" "many" "hundreds" "thousands")
+
+# Decision logic
+detect_complexity() {
+  local task_lower=$(echo "$TASK" | tr '[:upper:]' '[:lower:]')
+  local fast_score=0
+  local smart_score=0
+  local context_score=0
+  
+  # Check for fast keywords
+  for kw in "${FAST_KEYWORDS[@]}"; do
+    if echo "$task_lower" | grep -q "\b$kw\b"; then
+      ((fast_score++))
+    fi
+  done
+  
+  # Check for smart keywords
+  for kw in "${SMART_KEYWORDS[@]}"; do
+    if echo "$task_lower" | grep -q "\b$kw\b"; then
+      ((smart_score++))
+    fi
+  done
+  
+  # Check for context indicators
+  for kw in "${CONTEXT_INDICATORS[@]}"; do
+    if echo "$task_lower" | grep -q "\b$kw\b"; then
+      ((context_score++))
+    fi
+  done
+  
+  # Task length heuristic (longer tasks often need more context)
+  local task_length=${#TASK}
+  if [[ $task_length -gt 200 ]]; then
+    ((context_score++))
+  fi
+  if [[ $task_length -gt 500 ]]; then
+    ((context_score+=2))
+  fi
+  
+  # Decision
+  if [[ "$FORCE_FAST" == true ]]; then
+    echo "fast"
+  elif [[ "$FORCE_SMART" == true ]]; then
+    echo "smart"
+  elif [[ $smart_score -gt 0 ]] || [[ $context_score -gt 1 ]]; then
+    echo "smart"
+  elif [[ $fast_score -gt 0 ]] && [[ $smart_score -eq 0 ]]; then
+    echo "fast"
+  elif [[ $task_length -lt 100 ]]; then
+    echo "fast"
+  else
+    echo "default"
+  fi
+}
+
+MODEL_CHOICE=$(detect_complexity)
+
+# Verbose output
+if [[ "$VERBOSE" == true ]]; then
+  echo "Task: $TASK"
+  echo "Routing to: $MODEL_CHOICE"
+  echo ""
+fi
+
+# Execute based on routing decision
+case $MODEL_CHOICE in
+  fast)
+    echo "🚀 Routing to gemma-fast (8k context, optimized for speed)..."
+    echo ""
+    echo "To execute this task with the fast model, run:"
+    echo ""
+    echo "  openclaw sessions spawn --task '$TASK' --model gemma-fast --timeout 60"
+    echo ""
+    echo "Or switch to the model temporarily:"
+    echo "  /model gemma-fast"
+    ;;
+  smart)
+    echo "🧠 Routing to primary model (complex reasoning)..."
+    echo ""
+    echo "This task requires the primary model. Executing with current configuration..."
+    ;;
+  *)
+    echo "⚡ Using default model..."
+    ;;
+esac

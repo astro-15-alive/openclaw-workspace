@@ -1,0 +1,8 @@
+# Brave API Usage Tracker - Daily at midnight
+0 0 * * * /Users/keenaben/.openclaw/workspace/scripts/track_brave_usage.sh >> /Users/keenaben/.openclaw/workspace/scripts/brave_usage_cron.log 2>&1
+
+# Brave API Usage Tracker - Daily at 6am
+0 6 * * * /Users/keenaben/.openclaw/workspace/scripts/track_brave_usage.sh check >> /Users/keenaben/.openclaw/workspace/scripts/brave_usage_cron.log 2>&1
+
+# Moonshot/Kimi API Usage Tracker - Daily at 6am
+0 6 * * * /Users/keenaben/.openclaw/workspace/scripts/track_moonshot_usage.sh check >> /Users/keenaben/.openclaw/workspace/scripts/moonshot_usage_cron.log 2>&1

@@ -5,11 +5,19 @@
 **Action:** Check agentmail inbox for new emails
 **Command to run:**
 ```bash
-export $(grep -v '^#' ~/.openclaw/.env | xargs) && python3 << 'PYEOF'
-from agentmail import AgentMail
+python3 << 'PYEOF'
+import json
 import os
+from datetime import datetime, timedelta
 
-client = AgentMail(api_key=os.getenv('AGENTMAIL_API_KEY'))
+# Load API key from secrets.json
+with open(os.path.expanduser('~/.openclaw/secrets.json')) as f:
+    secrets = json.load(f)
+os.environ['AGENTMAIL_API_KEY'] = secrets['AGENTMAIL_API_KEY']
+
+from agentmail import AgentMail
+
+client = AgentMail(api_key=os.environ['AGENTMAIL_API_KEY'])
 inbox_id = 'astro.15.alive@agentmail.to'
 
 # Get recent messages (last 60 min)
