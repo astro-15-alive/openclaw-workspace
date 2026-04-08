@@ -47,7 +47,7 @@ fi
 # --- XAI Usage ---
 XAI_BLOCK="[XAI script output]"
 if [ -f ~/.openclaw/workspace/scripts/track_xai_usage.sh ]; then
-    XAI_BLOCK=$(~/.openclaw/workspace/scripts/track_xai_usage.sh 2>/dev/null | grep -v "^$" | head -3 | sed 's/^/• /' || echo "[XAI data unavailable]")
+XAI_DEBUG=$(~/.openclaw/workspace/scripts/track_xai_usage.sh 2>/dev/null); echo "XAI_DEBUG=[$XAI_DEBUG]"
 fi
 
 # --- Bitcoin ---
@@ -81,13 +81,14 @@ fi
 # --- Output ---
 echo "🌅 **Morning Brief** - $TODAY"
 echo ""
-
+echo "**Agent:** $AGENT_NAME | **Model:** $MODEL_ALIAS"
+echo ""
 echo "$WEATHER_BLOCK"
 echo ""
 echo "$OPENROUTER_BLOCK"
 echo ""
 echo "**XAI Usage:**
-$XAI_BLOCK"
+$xAI_BLOCK"
 echo ""
 echo "$BTC_BLOCK"
 echo ""

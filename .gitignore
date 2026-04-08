@@ -45,3 +45,7 @@ npm-debug.log*
 .clawhub/
 .openclaw/
 reports/
+
+# Nested git repos (worktrees/submodules)
+main/
+system/

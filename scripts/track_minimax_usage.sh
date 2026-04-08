@@ -2,7 +2,9 @@
 # track_minimax_usage.sh - Track MiniMax M2.7 API usage from session logs
 
 # Auto-source environment variables
-source ~/.openclaw/secrets.env 2>/dev/null
+set -a
+source ~/.openclaw/.env 2>/dev/null
+set +a
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DB_PATH="$SCRIPT_DIR/minimax_usage.db"

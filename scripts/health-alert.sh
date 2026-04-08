@@ -2,7 +2,9 @@
 # Health check + alert via local gemma model
 # Only sends Telegram if issues found
 
-source ~/.openclaw/secrets.env 2>/dev/null
+set -a
+source ~/.openclaw/.env 2>/dev/null
+set +a
 
 RESULT=$(~/.openclaw/workspace/scripts/health-check.sh)
 

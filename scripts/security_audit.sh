@@ -10,6 +10,7 @@ OS_VERSION=$(sw_vers -productVersion 2>/dev/null || echo "Unknown")
 REPORT=""
 REPORT+="🔒 **Security Audit Report** — $REPORT_DATE\n"
 REPORT+="\n"
+REPORT+="**Agent:** ripley | **Model:** gemma-4-e2b-it\n"
 REPORT+="📍 **Host:** $HOSTNAME\n"
 REPORT+="🖥️ **macOS:** $OS_VERSION\n"
 REPORT+="\n"

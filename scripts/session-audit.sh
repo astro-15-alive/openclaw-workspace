@@ -8,6 +8,7 @@ REPORT_TIMESTAMP=$(date '+%Y-%m-%d %H:%M')
 SEVEN_DAYS_AGO=$(date -v-7d '+%Y-%m-%d' 2>/dev/null || date -d '7 days ago' '+%Y-%m-%d')
 
 echo "🔍 Session Audit Report - $REPORT_TIMESTAMP"
+echo "Agent: ripley | Model: gemma-4-e2b-it"
 echo "=========================================="
 echo ""
 

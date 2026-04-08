@@ -2,9 +2,12 @@
 # Task Report Script
 # Outputs Discord-formatted task status
 
-source ~/.openclaw/secrets.env 2>/dev/null
+set -a
+source ~/.openclaw/.env 2>/dev/null
+set +a
 
 echo "📋 **Daily Task Report** - $(date '+%A, %B %d, %Y')"
+echo "**Agent:** ripley | **Model:** gemma-4-e2b-it"
 echo ""
 echo "**Open Tasks:**"
 OUTPUT=$(~/.openclaw/workspace/scripts/tasks.sh list 2>/dev/null)

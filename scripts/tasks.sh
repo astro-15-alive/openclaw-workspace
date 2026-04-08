@@ -3,7 +3,9 @@
 # Usage: tasks.sh {list|add|add-note|complete} [args]
 
 # Auto-source environment variables
-source ~/.openclaw/secrets.env 2>/dev/null
+set -a
+source ~/.openclaw/.env 2>/dev/null
+set +a
 
 COMMAND="${1:-}"
 shift || true

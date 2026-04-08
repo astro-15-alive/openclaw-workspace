@@ -2,7 +2,9 @@
 # Health check script for Mac mini
 # Returns JSON with health status - caller decides if alert is needed
 
-source ~/.openclaw/secrets.env 2>/dev/null
+set -a
+source ~/.openclaw/.env 2>/dev/null
+set +a
 
 ISSUES=()
 WARNINGS=()

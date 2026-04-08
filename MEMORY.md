@@ -83,12 +83,21 @@ openclaw run --model lmstudio/qwen3.5-9b-mlx
 
 ## Cron Jobs
 
-| Name | Schedule | Task |
-|------|----------|------|
-| software-update-checker | Daily @ 1 AM | Check Homebrew/npm/Ollama updates (OpenClaw reported only — manual update) |
-| openclaw-backup | Daily @ midnight | Backup workspace |
-| openclaw-config-backup | Daily @ midnight | Backup openclaw.json |
-| brave-usage-tracker | Daily @ midnight | Track Brave API usage, alert at 90%, disable at 99% |
+| Name | Schedule | Task | Agent |
+|------|----------|------|-------|
+| system-health-check | Every 30 min | Gateway, Docker, SearXNG, disk, backup health check | ripley |
+| auto-commit-workspace | Daily @ 8 PM | Git add/commit/push workspace | ripley |
+| software-update-checker | Daily @ 1 AM | Check Homebrew/npm/Ollama updates (OpenClaw reported only — manual update) | astro (judgment required) |
+| daily backup | Daily @ 2 AM | Backup openclaw.json + .env | ripley |
+| daily task exe | Daily @ 3 AM | Process astro task list | ripley |
+| daily task report | Daily @ 4 AM | Post task status to Discord | ripley |
+| daily briefing | Daily @ 6 AM | Weather, balances, BTC, AI news to Discord | astro (complex multi-API) |
+| weekly session audit | Weekly @ 9 AM Sun | Session stats to Discord #system | ripley |
+| weekly security audit | Weekly @ 9 AM Sun | Security check to Discord #system | ripley |
+| gateway-token-rotation | Every 30 days @ 2 AM | Rotate gateway token | ripley |
+| check-upcoming-events | Daily @ 3:15 PM | Calendar event alerts | ripley |
+| brave-usage-tracker | Daily @ midnight | Track Brave API usage, alert at 90%, disable at 99% | ripley |
+| moonshot-usage-tracker | Daily @ 6 AM | Track Moonshot/Kimi API usage and budget | ripley |
 
 ## Brave API Usage Monitoring
 
@@ -189,6 +198,23 @@ Budget: 17% of $50
 - `docs/moonshot-usage-tracker.md` - Documentation
 
 ---
+
+### OpenClaw Upgrade Policy (2026-04-08)
+**NEVER upgrade OpenClaw automatically.** Always do it manually. The software-update-checker cron is configured to report OpenClaw updates but not install them. Use `npm install -g openclaw@VERSION` to upgrade manually.
+
+**Current version:** 2026.4.5 (3e72c03)
+
+## Agents
+
+**IMPORTANT:** The primary agent is named **Astro** (agent id: `main`). Always refer to it as "Astro" in user-facing output.
+
+| Agent ID | Display Name | Purpose | Default Model |
+|----------|--------------|---------|---------------|
+| main | Astro | Primary agent — direct chat with BK | minimax-m2.7 |
+| ripley | (Ripley) | Most system cron jobs — health checks, backups, audits, task ops, token rotation | gemma-4-e2b-it (local LM Studio) |
+| system | (System) | Built-in core runtime agent (cannot be removed) | - |
+
+Ripley handles most automated tasks (zero API cost). Astro handles jobs requiring multi-source API calls or judgment calls.
 
 ## Lessons Learned
 

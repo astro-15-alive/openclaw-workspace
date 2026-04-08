@@ -2,7 +2,9 @@
 # Tasks Execute Script
 # Processes astro tasks: simple ones completed, complex ones get notes
 
-source ~/.openclaw/secrets.env 2>/dev/null
+set -a
+source ~/.openclaw/.env 2>/dev/null
+set +a
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TASKS_CMD="$SCRIPT_DIR/tasks.sh"
@@ -74,6 +76,8 @@ while IFS= read -r line; do
 done <<< "$TASKS"
 
 RESULT="Processed $PROCESSED tasks: $COMPLETED completed, $BLOCKED need review"
+echo "**Agent:** ripley | **Model:** gemma-4-e2b-it"
+echo ""
 echo "$RESULT"
 
 # Send Telegram if tasks were processed

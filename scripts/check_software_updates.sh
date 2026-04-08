@@ -1,6 +1,7 @@
 #!/bin/bash
-# Software Update Script
-# Checks for software updates, auto-updates Homebrew/npm/Ollama, reports OpenClaw updates manually
+# Software Update Checker
+# Checks for software updates only - never auto-updates
+# Reports commands to run for manual updates
 
 set -e
 
@@ -11,9 +12,7 @@ REPORT_FILE="/tmp/software_update_report.txt"
 echo "📦 **Software Update Report** — $(date '+%A, %B %d, %Y at %I:%M %p %Z')" > "$REPORT_FILE"
 echo "" >> "$REPORT_FILE"
 
-AUTO_UPDATES_DONE=0
-AUTO_UPDATES_FAILED=0
-OLLAMA_UPDATED=false
+UPDATES_AVAILABLE=0
 
 # Function to check if command exists
 command_exists() {
@@ -25,128 +24,214 @@ add_to_report() {
     echo "$1" >> "$REPORT_FILE"
 }
 
-# Check and update Homebrew
+# Check Node.js
+if command_exists node; then
+    add_to_report "**🟢 Node.js**"
+    add_to_report ""
+    CURRENT_VERSION=$(node --version 2>/dev/null || echo "unknown")
+    add_to_report "Current version: \`$CURRENT_VERSION\`"
+    add_to_report ""
+
+    # Get latest (non-LTS) version
+    LATEST=$(curl -s --connect-timeout 5 "https://nodejs.org/dist/index.json" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d[0]['version'])" 2>/dev/null || echo "")
+    if [ -n "$LATEST" ] && [ "$CURRENT_VERSION" != "$LATEST" ]; then
+        add_to_report "⚠️ Update available: \`$CURRENT_VERSION\` → \`$LATEST\`"
+        add_to_report "**To update:** \`brew upgrade node\` or see https://nodejs.org"
+        add_to_report ""
+        UPDATES_AVAILABLE=$((UPDATES_AVAILABLE + 1))
+    else
+        add_to_report "✅ Already at latest version (\`$CURRENT_VERSION\`)"
+        add_to_report ""
+    fi
+fi
+
+# Check Python
+if command_exists python3; then
+    add_to_report "**🐍 Python**"
+    add_to_report ""
+    CURRENT_VERSION=$(python3 --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "unknown")
+    add_to_report "Current version: \`$CURRENT_VERSION\`"
+    add_to_report ""
+
+    LATEST=$(curl -s --connect-timeout 5 "https://endoflife.date/api/python.json" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d[0]['latest'])" 2>/dev/null || echo "")
+    if [ -n "$LATEST" ] && [ "$CURRENT_VERSION" != "$LATEST" ]; then
+        add_to_report "⚠️ Update available: \`$CURRENT_VERSION\` → \`$LATEST\`"
+        add_to_report "**To update:** \`brew upgrade python\`"
+        add_to_report ""
+        UPDATES_AVAILABLE=$((UPDATES_AVAILABLE + 1))
+    else
+        add_to_report "✅ Already at latest version (\`$CURRENT_VERSION\`)"
+        add_to_report ""
+    fi
+fi
+
+# Check Go
+if command_exists go; then
+    add_to_report "**🔵 Go**"
+    add_to_report ""
+    CURRENT_VERSION=$(go version 2>/dev/null | grep -o 'go[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "unknown")
+    add_to_report "Current version: \`$CURRENT_VERSION\`"
+    add_to_report ""
+
+    LATEST=$(curl -s --connect-timeout 5 "https://go.dev/dl/?mode=json" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d[0]['version'])" 2>/dev/null || echo "")
+    if [ -n "$LATEST" ] && [ "$CURRENT_VERSION" != "$LATEST" ]; then
+        add_to_report "⚠️ Update available: \`$CURRENT_VERSION\` → \`$LATEST\`"
+        add_to_report "**To update:** \`brew upgrade go\` or see https://go.dev/dl/"
+        add_to_report ""
+        UPDATES_AVAILABLE=$((UPDATES_AVAILABLE + 1))
+    else
+        add_to_report "✅ Already at latest version (\`$CURRENT_VERSION\`)"
+        add_to_report ""
+    fi
+fi
+
+# Check Docker
+if command_exists docker; then
+    add_to_report "**🐳 Docker**"
+    add_to_report ""
+    CURRENT_VERSION=$(docker --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1 || echo "unknown")
+    add_to_report "Current version: \`$CURRENT_VERSION\`"
+    add_to_report ""
+    add_to_report "Updates via Docker Desktop app (check ⚙️ → Settings → General)"
+    add_to_report ""
+fi
+
+# Check macOS system updates
+add_to_report "**🍎 macOS**"
+add_to_report ""
+MACOS_VERSION=$(sw_vers -productVersion 2>/dev/null || echo "unknown")
+add_to_report "Current version: \`$MACOS_VERSION\`"
+SYSTEM_UPDATES=$(softwareupdate --list 2>&1 | grep -c "\*" || echo "0")
+if [ "$SYSTEM_UPDATES" -gt 0 ]; then
+    add_to_report "⚠️ $SYSTEM_UPDATES system update(s) available"
+    add_to_report "**To update:** \`sudo softwareupdate -i -a\`"
+    add_to_report ""
+    UPDATES_AVAILABLE=$((UPDATES_AVAILABLE + 1))
+else
+    add_to_report "✅ No system updates available"
+    add_to_report ""
+fi
+
+# Check Colima
+if command_exists colima; then
+    add_to_report "**🦺 Colima**"
+    add_to_report ""
+    COLIMA_VERSION=$(colima version 2>/dev/null | grep "version" | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1 || echo "unknown")
+    add_to_report "Current version: \`$COLIMA_VERSION\`"
+    LATEST=$(curl -s --connect-timeout 5 "https://api.github.com/repos/abiosoft/colima/releases/latest" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('tag_name','$COLIMA_VERSION').lstrip('v'))" 2>/dev/null || echo "$COLIMA_VERSION")
+    if [ "$LATEST" != "" ] && [ "$LATEST" != "$COLIMA_VERSION" ]; then
+        add_to_report "⚠️ Update available: \`$COLIMA_VERSION\` → \`$LATEST\`"
+        add_to_report "**To update:** \`brew upgrade colima\`"
+        add_to_report ""
+        UPDATES_AVAILABLE=$((UPDATES_AVAILABLE + 1))
+    else
+        add_to_report "✅ Already at latest version (\`$COLIMA_VERSION\`)"
+        add_to_report ""
+    fi
+fi
+
+# Check Homebrew
 if command_exists brew; then
     add_to_report "**📦 Homebrew**"
     add_to_report ""
-    
-    # Update brew itself
-    brew update >/dev/null 2>&1
-    
-    # Check for outdated packages
+
     OUTDATED=$(brew outdated 2>/dev/null || true)
     if [ -n "$OUTDATED" ]; then
-        add_to_report "Outdated packages found:"
+        add_to_report "⚠️ Updates available:"
         add_to_report "\`\`\`"
         echo "$OUTDATED" >> "$REPORT_FILE"
         add_to_report "\`\`\`"
+        add_to_report "**To update:** \`brew upgrade\`"
         add_to_report ""
-        add_to_report "⬆️ **Running:** \`brew upgrade\`"
-        add_to_report ""
-        
-        # Run brew upgrade
-        if brew upgrade --quiet 2>&1 >> "$REPORT_FILE"; then
-            add_to_report "✅ **Homebrew packages upgraded successfully**"
-            AUTO_UPDATES_DONE=$((AUTO_UPDATES_DONE + 1))
-        else
-            add_to_report "❌ **Homebrew upgrade failed**"
-            add_to_report "**To manually install:** \`brew upgrade\`"
-            AUTO_UPDATES_FAILED=$((AUTO_UPDATES_FAILED + 1))
-        fi
+        UPDATES_AVAILABLE=$((UPDATES_AVAILABLE + 1))
     else
         add_to_report "✅ All packages up to date"
+        add_to_report ""
     fi
-    add_to_report ""
 fi
 
-# Check npm global packages (OpenClaw update check only - no auto-update)
+# Check npm global packages
 if command_exists npm; then
     add_to_report "**📦 npm (global packages)**"
     add_to_report ""
-    
-    # Check for outdated global packages
+
     OUTDATED=$(npm outdated -g 2>/dev/null || true)
-    
-    # Check if openclaw has an update available
-    if echo "$OUTDATED" | grep -q "openclaw"; then
-        OPENCLAW_UPDATE_AVAILABLE=true
-        add_to_report "⚠️ **OpenClaw update available**"
+    if [ -n "$OUTDATED" ]; then
+        add_to_report "⚠️ Updates available:"
         add_to_report "\`\`\`"
-        echo "$OUTDATED" | grep "openclaw" >> "$REPORT_FILE" || true
+        echo "$OUTDATED" >> "$REPORT_FILE"
         add_to_report "\`\`\`"
-        add_to_report "**To manually update:** \`npm update -g openclaw\`"
+        add_to_report "**To update:** \`npm update -g\`"
         add_to_report ""
-    fi
-    
-    # Show other outdated packages (excluding openclaw)
-    OTHER_OUTDATED=$(echo "$OUTDATED" | grep -v "openclaw" || true)
-    if [ -n "$OTHER_OUTDATED" ]; then
-        add_to_report "Other outdated packages:"
-        add_to_report "\`\`\`"
-        echo "$OTHER_OUTDATED" >> "$REPORT_FILE"
-        add_to_report "\`\`\`"
-        add_to_report ""
-        add_to_report "⬆️ **Running:** \`npm update -g\`"
-        add_to_report ""
-        
-        # Run npm update for non-openclaw packages
-        if npm update -g 2>&1 >> "$REPORT_FILE"; then
-            add_to_report "✅ **npm packages upgraded successfully**"
-            AUTO_UPDATES_DONE=$((AUTO_UPDATES_DONE + 1))
-        else
-            add_to_report "❌ **npm upgrade failed**"
-            add_to_report "**To manually install:** \`npm update -g\`"
-            AUTO_UPDATES_FAILED=$((AUTO_UPDATES_FAILED + 1))
-        fi
-    elif [ -z "$OUTDATED" ]; then
+        UPDATES_AVAILABLE=$((UPDATES_AVAILABLE + 1))
+    else
         add_to_report "✅ All global packages up to date"
+        add_to_report ""
     fi
-    add_to_report ""
 fi
 
-# Check and update Ollama
+# Check Ollama
 if command_exists ollama; then
     add_to_report "**🤖 Ollama**"
     add_to_report ""
+
     CURRENT_VERSION=$(ollama --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "unknown")
     add_to_report "Current version: \`$CURRENT_VERSION\`"
     add_to_report ""
-    add_to_report "⬆️ **Running Ollama installer to check for updates...**"
-    add_to_report ""
-    
-    # Run Ollama install script to update
-    if curl -fsSL https://ollama.com/install.sh | sh 2>&1 >> "$REPORT_FILE"; then
-        NEW_VERSION=$(ollama --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "unknown")
-        if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
-            add_to_report ""
-            add_to_report "✅ **Ollama updated: $CURRENT_VERSION → $NEW_VERSION**"
-            OLLAMA_UPDATED=true
-        else
-            add_to_report ""
-            add_to_report "✅ **Ollama is already at latest version ($CURRENT_VERSION)**"
-        fi
-        AUTO_UPDATES_DONE=$((AUTO_UPDATES_DONE + 1))
-    else
+
+    LATEST=$(curl -s "https://api.ollama.ai/version" 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1 || echo "")
+    if [ -n "$LATEST" ] && [ "$CURRENT_VERSION" != "$LATEST" ]; then
+        add_to_report "⚠️ Update available: \`$CURRENT_VERSION\` → \`$LATEST\`"
+        add_to_report "**To update:** \`curl -fsSL https://ollama.com/install.sh | sh\`"
         add_to_report ""
-        add_to_report "❌ **Ollama update failed**"
-        add_to_report "**To manually update:** Download from https://ollama.com/download"
-        AUTO_UPDATES_FAILED=$((AUTO_UPDATES_FAILED + 1))
+        UPDATES_AVAILABLE=$((UPDATES_AVAILABLE + 1))
+    else
+        add_to_report "✅ Already at latest version (\`$CURRENT_VERSION\`)"
+        add_to_report ""
     fi
+fi
+
+# Check LM Studio
+LM_STUDIO_APP="/Applications/LM Studio.app"
+if [ -d "$LM_STUDIO_APP" ]; then
+    add_to_report "**🖥️ LM Studio**"
+    add_to_report ""
+
+    CURRENT_VERSION=$(mdls -name kMDItemVersion "$LM_STUDIO_APP" 2>/dev/null | grep -o '"[^"]*"$' | tr -d '"' || echo "unknown")
+    add_to_report "Current version: \`$CURRENT_VERSION\`"
+    add_to_report ""
+    add_to_report "Updates via the app (check the app for new versions)"
     add_to_report ""
 fi
 
+# Check OpenClaw
+if command_exists openclaw; then
+    add_to_report "**🦞 OpenClaw**"
+    add_to_report ""
 
+    CURRENT_VERSION=$(openclaw --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1 || echo "unknown")
+    add_to_report "Current version: \`$CURRENT_VERSION\`"
+    add_to_report ""
+
+    LATEST=$(npm show openclaw version 2>/dev/null || echo "")
+    if [ -n "$LATEST" ] && [ "$CURRENT_VERSION" != "$LATEST" ]; then
+        add_to_report "⚠️ Update available: \`$CURRENT_VERSION\` → \`$LATEST\`"
+        add_to_report "**To update:** \`npm update -g openclaw\`"
+        add_to_report ""
+        UPDATES_AVAILABLE=$((UPDATES_AVAILABLE + 1))
+    else
+        add_to_report "✅ Already at latest version (\`$CURRENT_VERSION\`)"
+        add_to_report ""
+    fi
+fi
 
 # Summary
 add_to_report "---"
 add_to_report ""
-if [ $AUTO_UPDATES_DONE -gt 0 ] && [ $AUTO_UPDATES_FAILED -eq 0 ]; then
-    add_to_report "✅ **Summary:** $AUTO_UPDATES_DONE update(s) completed"
-    [ "$OLLAMA_UPDATED" = true ] && add_to_report "🤖 Ollama updated"
-elif [ $AUTO_UPDATES_DONE -gt 0 ] && [ $AUTO_UPDATES_FAILED -gt 0 ]; then
-    add_to_report "⚠️ **Summary:** $AUTO_UPDATES_DONE updated, $AUTO_UPDATES_FAILED failed"
-elif [ $AUTO_UPDATES_FAILED -gt 0 ]; then
-    add_to_report "❌ **Summary:** $AUTO_UPDATES_FAILED update(s) failed"
+if [ $UPDATES_AVAILABLE -gt 0 ]; then
+    add_to_report "⚠️ **Summary:** $UPDATES_AVAILABLE software update(s) available"
+    add_to_report ""
+    add_to_report "Run the commands above to update each package."
 else
     add_to_report "✅ **Summary:** All software is up to date"
 fi
@@ -154,5 +239,4 @@ fi
 # Print report for cron output
 cat "$REPORT_FILE"
 
-# Always exit successfully - failures are reported in the output
 exit 0

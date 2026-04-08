@@ -2,7 +2,9 @@
 # send-telegram.sh - Send message via Telegram Bot API
 # Usage: send-telegram.sh <message>
 
-source ~/.openclaw/secrets.env 2>/dev/null
+set -a
+source ~/.openclaw/.env 2>/dev/null
+set +a
 
 MESSAGE="${1:-}"
 
