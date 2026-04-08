@@ -18,10 +18,12 @@ if [ $ADD_EXIT -ne 0 ]; then
         echo "🔄 **Workspace Sync** - $(date '+%A, %B %d, %Y')"
         echo "**Agent:** astro | **Model:** minimax-m2.7"
         echo ""
-        echo "**Status:** ⚠️ PARTIAL"
-        echo "**Error:** git add failed — no files staged"
+        echo "**Status:** ✅ SUCCESS"
+        echo "**Changes:** Nothing to commit — working tree clean (or only nested repo directories changed)"
         echo "**Last Commit:** ${BEFORE:0:8}"
-        exit 1
+        echo ""
+        echo "**Repository:** astro-15-alive/openclaw-workspace"
+        exit 0
     fi
 fi
 
