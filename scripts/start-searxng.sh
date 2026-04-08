@@ -2,8 +2,14 @@
 # Startup script for SearXNG
 # Runs after Colima starts
 
-sleep 10  # Wait for Colima to fully start
+sleep 5  # Wait for Colima to fully start
 
-if ! docker ps | grep -q searxng; then
-    docker start searxng 2>/dev/null || docker run -d -p 8888:8080 --name searxng --restart unless-stopped searxng/searxng:latest
+if docker ps -a | grep -q searxng; then
+    docker start searxng
+else
+    docker run -d \
+        --name searxng \
+        --restart unless-stopped \
+        -p 8888:8080 \
+        searxng/searxng:latest
 fi

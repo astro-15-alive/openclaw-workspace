@@ -85,6 +85,7 @@ openclaw run --model lmstudio/qwen3.5-9b-mlx
 
 | Name | Schedule | Task |
 |------|----------|------|
+| software-update-checker | Daily @ 1 AM | Check Homebrew/npm/Ollama updates (OpenClaw reported only — manual update) |
 | openclaw-backup | Daily @ midnight | Backup workspace |
 | openclaw-config-backup | Daily @ midnight | Backup openclaw.json |
 | brave-usage-tracker | Daily @ midnight | Track Brave API usage, alert at 90%, disable at 99% |

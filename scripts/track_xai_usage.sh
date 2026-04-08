@@ -1,7 +1,7 @@
 #!/bin/bash
 # track_xai_usage.sh - Check xAI API balance via management API
 
-source ~/.openclaw/.env 2>/dev/null
+source ~/.openclaw/secrets.env 2>/dev/null
 
 XAI_MANAGEMENT_KEY="${XAI_MANAGEMENT_KEY}"
 XAI_TEAM_ID="${XAI_TEAM_ID}"

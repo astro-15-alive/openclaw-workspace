@@ -1,6 +1,6 @@
 #!/bin/bash
 # Software Update Script
-# Checks and installs software updates, reports manual steps to Discord
+# Checks for software updates, auto-updates Homebrew/npm/Ollama, reports OpenClaw updates manually
 
 set -e
 
@@ -13,8 +13,6 @@ echo "" >> "$REPORT_FILE"
 
 AUTO_UPDATES_DONE=0
 AUTO_UPDATES_FAILED=0
-MANUAL_UPDATES=0
-OPENCLAW_UPDATED=false
 OLLAMA_UPDATED=false
 
 # Function to check if command exists
@@ -61,7 +59,7 @@ if command_exists brew; then
     add_to_report ""
 fi
 
-# Check and update npm global packages
+# Check npm global packages (OpenClaw update check only - no auto-update)
 if command_exists npm; then
     add_to_report "**📦 npm (global packages)**"
     add_to_report ""
@@ -69,21 +67,29 @@ if command_exists npm; then
     # Check for outdated global packages
     OUTDATED=$(npm outdated -g 2>/dev/null || true)
     
-    # Check if openclaw is in the outdated list
+    # Check if openclaw has an update available
     if echo "$OUTDATED" | grep -q "openclaw"; then
-        OPENCLAW_UPDATED=true
+        OPENCLAW_UPDATE_AVAILABLE=true
+        add_to_report "⚠️ **OpenClaw update available**"
+        add_to_report "\`\`\`"
+        echo "$OUTDATED" | grep "openclaw" >> "$REPORT_FILE" || true
+        add_to_report "\`\`\`"
+        add_to_report "**To manually update:** \`npm update -g openclaw\`"
+        add_to_report ""
     fi
     
-    if [ -n "$OUTDATED" ]; then
-        add_to_report "Outdated global packages found:"
+    # Show other outdated packages (excluding openclaw)
+    OTHER_OUTDATED=$(echo "$OUTDATED" | grep -v "openclaw" || true)
+    if [ -n "$OTHER_OUTDATED" ]; then
+        add_to_report "Other outdated packages:"
         add_to_report "\`\`\`"
-        echo "$OUTDATED" >> "$REPORT_FILE"
+        echo "$OTHER_OUTDATED" >> "$REPORT_FILE"
         add_to_report "\`\`\`"
         add_to_report ""
         add_to_report "⬆️ **Running:** \`npm update -g\`"
         add_to_report ""
         
-        # Run npm update
+        # Run npm update for non-openclaw packages
         if npm update -g 2>&1 >> "$REPORT_FILE"; then
             add_to_report "✅ **npm packages upgraded successfully**"
             AUTO_UPDATES_DONE=$((AUTO_UPDATES_DONE + 1))
@@ -92,7 +98,7 @@ if command_exists npm; then
             add_to_report "**To manually install:** \`npm update -g\`"
             AUTO_UPDATES_FAILED=$((AUTO_UPDATES_FAILED + 1))
         fi
-    else
+    elif [ -z "$OUTDATED" ]; then
         add_to_report "✅ All global packages up to date"
     fi
     add_to_report ""
@@ -129,31 +135,13 @@ if command_exists ollama; then
     add_to_report ""
 fi
 
-# Restart OpenClaw gateway if it was updated
-if [ "$OPENCLAW_UPDATED" = true ]; then
-    add_to_report "**🔄 OpenClaw Gateway Restart**"
-    add_to_report ""
-    add_to_report "OpenClaw was updated. Scheduling gateway restart in 2 minutes..."
-    add_to_report ""
-    
-    # Schedule restart for later so this script can finish and report to Discord
-    if command_exists at; then
-        echo "openclaw gateway restart" | at now + 2 minutes 2>/dev/null
-        add_to_report "✅ **OpenClaw gateway restart scheduled (in 2 minutes)**"
-    else
-        # Fallback: background the restart with nohup
-        (sleep 30 && openclaw gateway restart) &
-        add_to_report "✅ **OpenClaw gateway restart scheduled (in 30 seconds)**"
-    fi
-    add_to_report ""
-fi
+
 
 # Summary
 add_to_report "---"
 add_to_report ""
 if [ $AUTO_UPDATES_DONE -gt 0 ] && [ $AUTO_UPDATES_FAILED -eq 0 ]; then
     add_to_report "✅ **Summary:** $AUTO_UPDATES_DONE update(s) completed"
-    [ "$OPENCLAW_UPDATED" = true ] && add_to_report "🔄 OpenClaw gateway restarted"
     [ "$OLLAMA_UPDATED" = true ] && add_to_report "🤖 Ollama updated"
 elif [ $AUTO_UPDATES_DONE -gt 0 ] && [ $AUTO_UPDATES_FAILED -gt 0 ]; then
     add_to_report "⚠️ **Summary:** $AUTO_UPDATES_DONE updated, $AUTO_UPDATES_FAILED failed"

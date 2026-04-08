@@ -2,7 +2,7 @@
 # track_moonshot_usage.sh - Get Moonshot/Kimi API balance in USD
 
 # Auto-source environment variables
-source ~/.openclaw/.env 2>/dev/null
+source ~/.openclaw/secrets.env 2>/dev/null
 
 MOONSHOT_API_KEY="${MOONSHOT_API_KEY}"
 

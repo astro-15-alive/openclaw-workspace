@@ -3,7 +3,7 @@
 # Australian local time (Australia/Melbourne)
 
 # Auto-source environment variables
-source ~/.openclaw/.env 2>/dev/null
+source ~/.openclaw/secrets.env 2>/dev/null
 
 set -e
 
